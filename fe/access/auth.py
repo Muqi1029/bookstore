@@ -13,6 +13,12 @@ class Auth:
         return r.status_code, r.json().get("token")
 
     def register(self, user_id: str, password: str) -> int:
+        """
+        send url
+        :param user_id:
+        :param password:
+        :return:
+        """
         json = {"user_id": user_id, "password": password}
         url = urljoin(self.url_prefix, "register")
         r = requests.post(url, json=json)

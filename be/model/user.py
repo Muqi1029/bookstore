@@ -5,6 +5,7 @@ import sqlite3 as sqlite
 from be.model import error
 from be.model import db_conn
 
+
 # encode a json string like:
 #   {
 #       "user_id": [user name],
@@ -57,13 +58,24 @@ class User(db_conn.DBConn):
         try:
             terminal = "terminal_{}".format(str(time.time()))
             token = jwt_encode(user_id, terminal)
-            self.conn.execute(
-                "INSERT into user(user_id, password, balance, token, terminal) "
-                "VALUES (?, ?, ?, ?, ?);",
-                (user_id, password, 0, token, terminal),
-            )
-            self.conn.commit()
-        except sqlite.Error:
+            """
+            use mongodb database here
+            """
+            user = {
+                "user_id": user_id,
+                "password": password,
+                "balance": 0,
+                "token": token,
+                "terminal": terminal,
+            }
+            self.conn.user_collection.insert_one(user)
+            # self.conn.execute(
+            #     "INSERT into user(user_id, password, balance, token, terminal) "
+            #     "VALUES (?, ?, ?, ?, ?);",
+            #     (user_id, password, 0, token, terminal),
+            # )
+            # self.conn.commit()
+        except Exception:
             return error.error_exist_user_id(user_id)
         return 200, "ok"
 
@@ -152,7 +164,7 @@ class User(db_conn.DBConn):
         return 200, "ok"
 
     def change_password(
-        self, user_id: str, old_password: str, new_password: str
+            self, user_id: str, old_password: str, new_password: str
     ) -> bool:
         try:
             code, message = self.check_password(user_id, old_password)
