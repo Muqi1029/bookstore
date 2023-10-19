@@ -1,6 +1,3 @@
-import logging
-import os
-import sqlite3 as sqlite
 import pymongo
 
 
@@ -13,6 +10,7 @@ class Store:
     def init_collections(self):
         # Define MongoDB collections for your tables
         self.user_collection = self.db['user']
+        self.user_collection.create_index([("user_id", 1)], unique=True)
         self.user_store_collection = self.db['user_store']
         self.store_collection = self.db['store']
         self.new_order_collection = self.db['new_order']
