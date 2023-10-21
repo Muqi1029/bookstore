@@ -15,6 +15,7 @@ class Store:
         self.store_collection = self.db['store']
         self.new_order_collection = self.db['new_order']
         self.new_order_detail_collection = self.db['new_order_detail']
+        
 
 
 database_instance = None

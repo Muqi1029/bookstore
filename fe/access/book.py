@@ -1,5 +1,6 @@
 import os
 import sqlite3 as sqlite
+from pymongo import MongoClient
 import random
 import base64
 import simplejson as json
@@ -29,21 +30,63 @@ class Book:
 
 
 class BookDB:
-    def __init__(self, large: bool = True):
+    def __init__(self, large: bool = False):
+        #db_conn.DBConn.__init__(self)
         parent_path = os.path.dirname(os.path.dirname(__file__))
+        #self.client = MongoClient('mongodb://localhost:27017/')
+        #self.db = self.client['bookstore']
+        
         self.db_s = os.path.join(parent_path, "data/book.db")
         self.db_l = os.path.join(parent_path, "data/book_lx.db")
         if large:
             self.book_db = self.db_l
         else:
             self.book_db = self.db_s
+        
 
     def get_book_count(self):
+        #return self.collection.count_documents({})
+        
         conn = sqlite.connect(self.book_db)
         cursor = conn.execute("SELECT count(id) FROM book")
         row = cursor.fetchone()
         return row[0]
+        """
 
+    def get_book_info(self, start, size) -> [Book]:
+        books = []
+        cursor = self.collection.find().skip(start).limit(size)
+        for doc in cursor:
+            book = Book()
+            book.id = doc['id']
+            book.title = doc['title']
+            book.author = doc['author']
+            book.publisher = doc['publisher']
+            book.original_title = doc['original_title']
+            book.translator = doc['translator']
+            book.pub_year = doc['pub_year']
+            book.pages = doc['pages']
+            book.price = doc['price']
+
+            book.currency_unit = doc['currency_unit']
+            book.binding = doc['binding']
+            book.isbn = doc['isbn']
+            book.author_intro = doc['author_intro']
+            book.book_intro = doc['book_intro']
+            book.content = doc['content']
+            tags = doc['tags']
+
+            picture = doc['picture']
+
+            for tag in tags:
+                book.tags.append(tag)
+            for i in range(0, random.randint(0, 9)):
+                if picture is not None:
+                    encode_str = base64.b64encode(picture).decode("utf-8")
+                    book.pictures.append(encode_str)
+            books.append(book)
+        return books
+"""
     def get_book_info(self, start, size) -> [Book]:
         books = []
         conn = sqlite.connect(self.book_db)

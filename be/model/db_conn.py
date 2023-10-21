@@ -6,32 +6,26 @@ class DBConn:
         self.conn = store.get_db_conn()
 
     def user_id_exist(self, user_id):
-        cursor = self.conn.execute(
-            "SELECT user_id FROM user WHERE user_id = ?;", (user_id,)
-        )
-        row = cursor.fetchone()
-        if row is None:
+        user_query = {"user_id": user_id}
+        user_doc = self.conn.user_collection.find_one(user_query)
+        if user_doc is None:
             return False
         else:
             return True
 
     def book_id_exist(self, store_id, book_id):
-        cursor = self.conn.execute(
-            "SELECT book_id FROM store WHERE store_id = ? AND book_id = ?;",
-            (store_id, book_id),
-        )
-        row = cursor.fetchone()
-        if row is None:
+        query = {"store_id": store_id, "book_id": book_id}
+        book_doc = self.conn.store_collection.find_one(query)
+        if book_doc is None:
             return False
         else:
             return True
 
     def store_id_exist(self, store_id):
-        cursor = self.conn.execute(
-            "SELECT store_id FROM user_store WHERE store_id = ?;", (store_id,)
-        )
-        row = cursor.fetchone()
-        if row is None:
+        query = {"store_id": store_id}
+        store_doc = self.conn.user_store_collection.find_one(query)
+        if store_doc is None:
             return False
         else:
             return True
+

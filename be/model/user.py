@@ -85,12 +85,13 @@ class User(db_conn.DBConn):
         return 200, "ok"
 
     def check_password(self, user_id: str, password: str) -> (int, str):
-        cursor = self.conn.user_collection.find({"user_id": user_id})
-        row = list(cursor)
-        if not row:
+        query = {"user_id": user_id}
+        user_doc = self.conn.user_collection.find_one(query)
+
+        if user_doc is None:
             return error.error_authorization_fail()
 
-        if password != row[0]["password"]:
+        if user_doc["password"] != password:
             return error.error_authorization_fail()
 
         return 200, "ok"
@@ -166,16 +167,22 @@ class User(db_conn.DBConn):
 
             terminal = "terminal_{}".format(str(time.time()))
             token = jwt_encode(user_id, terminal)
-            cursor = self.conn.execute(
-                "UPDATE user set password = ?, token= ? , terminal = ? where user_id = ?",
-                (new_password, token, terminal, user_id),
-            )
-            if cursor.rowcount == 0:
+            query = {"user_id": user_id,"password": old_password}
+            update_data = {
+                "$set": {
+                    "password": new_password,
+                    "token": token,
+                    "terminal": terminal
+                }
+            }
+            result = self.conn.user_collection.update_one(query, update_data)
+
+            if result.modified_count == 0:
                 return error.error_authorization_fail()
 
-            self.conn.commit()
         except sqlite.Error as e:
             return 528, "{}".format(str(e))
         except BaseException as e:
             return 530, "{}".format(str(e))
         return 200, "ok"
+
