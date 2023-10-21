@@ -55,9 +55,6 @@ class Buyer(db_conn.DBConn):
             }
             self.conn.new_order_collection.insert_one(order_data)
             order_id = uid
-        except sqlite.Error as e:
-            logging.info("528, {}".format(str(e)))
-            return 528, "{}".format(str(e)), ""
         except BaseException as e:
             logging.info("530, {}".format(str(e)))
             return 530, "{}".format(str(e)), ""
@@ -67,25 +64,29 @@ class Buyer(db_conn.DBConn):
     def payment(self, user_id: str, password: str, order_id: str) -> (int, str):
         try:
             order_query = {"order_id": order_id}
+            # 1. find order
             order_doc = self.conn.new_order_collection.find_one(order_query)
             if order_doc is None:
                 return error.error_invalid_order_id(order_id)
 
-            order_id = order_doc.get("order_id")
-            buyer_id = order_doc.get("user_id")
-            store_id = order_doc.get("store_id")
+            order_id = order_doc["order_id"]
+            buyer_id = order_doc["user_id"]
+            store_id = order_doc["store_id"]
 
             if buyer_id != user_id:
                 return error.error_authorization_fail()
 
             user_query = {"user_id": buyer_id}
+
+            # 2. find buyer user
             user_doc = self.conn.user_collection.find_one(user_query)
             if user_doc is None:
                 return error.error_non_exist_user_id(buyer_id)
             balance = user_doc.get("balance", 0)
             if password != user_doc.get("password", ""):
                 return error.error_authorization_fail()
-            
+
+            # 3. find store
             user_store_query = {"store_id": store_id}
             user_store_doc = self.conn.user_store_collection.find_one(user_store_query)
             if user_store_doc is None:
@@ -95,7 +96,8 @@ class Buyer(db_conn.DBConn):
 
             if not self.user_id_exist(seller_id):
                 return error.error_non_exist_user_id(seller_id)
-            
+
+            # 4. order
             order_detail_query = {"order_id": order_id}
             order_detail_cursor = self.conn.new_order_detail_collection.find(order_detail_query)
             total_price = 0
@@ -110,13 +112,13 @@ class Buyer(db_conn.DBConn):
             user_query = {"user_id": buyer_id, "balance": {"$gte": total_price}}
             user_update = {"$inc": {"balance": -total_price}}
             update_result = self.conn.user_collection.update_one(user_query, user_update)
-            if update_result.modified_count == 0:
+            if update_result.matched_count == 0:
                 return error.error_not_sufficient_funds(order_id)
             
             user_query = {"user_id": buyer_id}
             user_update = {"$inc": {"balance": total_price}}
             update_result = self.conn.user_collection.update_one(user_query, user_update)
-            if update_result.modified_count == 0:
+            if update_result.matched_count == 0:
                 return error.error_non_exist_user_id(buyer_id)
 
             order_query = {"order_id": order_id}
@@ -126,11 +128,8 @@ class Buyer(db_conn.DBConn):
 
             order_detail_query = {"order_id": order_id}
             delete_result = self.conn.new_order_detail_collection.delete_many(order_detail_query)
-            if delete_result.deleted_count == 0:
+            if not delete_result.acknowledged:
                 return error.error_invalid_order_id(order_id)
-
-        except sqlite.Error as e:
-            return 528, "{}".format(str(e))
 
         except BaseException as e:
             return 530, "{}".format(str(e))
@@ -150,11 +149,9 @@ class Buyer(db_conn.DBConn):
             user_query = {"user_id": user_id}
             update = {"$inc": {"balance": add_value}}
             update_result = self.conn.user_collection.update_one(user_query, update)
-            if update_result.modified_count == 0:
-                return error.error_non_exist_user_id(user_id)
 
-        except sqlite.Error as e:
-            return 528, "{}".format(str(e))
+            if update_result.matched_count == 0:
+                return error.error_non_exist_user_id(user_id)
         except BaseException as e:
             return 530, "{}".format(str(e))
 

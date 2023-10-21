@@ -82,7 +82,7 @@
 
 
 ```shell
-mongod --dbpath="D:\software_data\MongoDB\data\testdb"
+mongod --dbpath="D:\softwareData\MongoDB\data\testdb"
 ```
 
 ## 2. MongoDB database establishment
