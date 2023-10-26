@@ -18,7 +18,7 @@ class Store:
         self.new_order_collection = self.db['new_order']
         self.new_order_detail_collection = self.db['new_order_detail']
         self.new_order_paid = self.db['new_order_paid']
-        self.new_order_cancel = self.db['new_order_cancel']
+        self.new_order_cancel_collection = self.db['new_order_cancel']
         
 
 

@@ -20,7 +20,6 @@ error_code = {
     528: "",
 }
 
-
 def error_non_exist_user_id(user_id):
     return 511, error_code[511].format(user_id)
 
@@ -61,8 +60,7 @@ def error_authorization_fail():
     return 401, error_code[401]
 
 
-def error_and_message(code, message):
-    return code, message
+
 
 def error_books_not_sent():
     return 520, error_code[520]
@@ -72,3 +70,12 @@ def error_books_duplicate_receive():
 
 def error_books_duplicate_sent():
     return 522, error_code[522]
+
+def error_seller_not_sufficient_funds(order_id):
+    return 523, error_code[523].format(order_id)
+
+def error_auto_cancel_fail(order_id):
+    return 524, error_code[524].format(order_id)
+
+def error_and_message(code, message):
+    return code, message
