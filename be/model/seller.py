@@ -28,9 +28,8 @@ class Seller(db_conn.DBConn):
                 "book_info": book_json_str,
                 "stock_level": stock_level
             }
+            # store
             self.conn.store_collection.insert_one(store_data)
-        except sqlite.Error as e:
-            return 528, "{}".format(str(e))
         except BaseException as e:
             return 530, "{}".format(str(e))
         return 200, "ok"

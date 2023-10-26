@@ -27,9 +27,9 @@ class Buyer(db_conn.DBConn):
                 if not book_doc:
                     return error.error_non_exist_book_id(book_id) + (order_id,)
 
-                stock_level = book_doc.get("stock_level")
-                book_info = book_doc.get("book_info")
-                price = book_info.get("price")
+                stock_level = book_doc["stock_level"]
+                book_info = json.loads(book_doc["book_info"])
+                price = book_info["price"]
 
                 if stock_level < count:
                     return error.error_stock_level_low(book_id) + (order_id,)

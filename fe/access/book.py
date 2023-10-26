@@ -34,7 +34,7 @@ class BookDB:
         # TODO: to be improved
         self.client = MongoClient('mongodb://localhost:27017/')
         self.db = self.client['bookstore']
-        self.book_col = self.db['book']
+        self.book_col = self.db['books']
 
     def get_book_count(self):
         return self.book_col.count_documents({})
@@ -42,27 +42,26 @@ class BookDB:
     def get_book_info(self, start, size) -> [Book]:
         books = []
         find_result = self.book_col.find().skip(start).limit(size)
-        for row in list(find_result):
+        for doc in find_result:
             book = Book()
-            book.id = row[0]
-            book.title = row[1]
-            book.author = row[2]
-            book.publisher = row[3]
-            book.original_title = row[4]
-            book.translator = row[5]
-            book.pub_year = row[6]
-            book.pages = row[7]
-            book.price = row[8]
+            book.id = doc['id']
+            book.title= doc['title']
+            book.author = doc['author']
+            book.publisher = doc['publisher']
+            book.original_title = doc['original_title']
+            book.translator = doc['translator']
+            book.pub_year = doc['pub_year']
+            book.pages = doc['pages']
+            book.price = doc['price']
 
-            book.currency_unit = row[9]
-            book.binding = row[10]
-            book.isbn = row[11]
-            book.author_intro = row[12]
-            book.book_intro = row[13]
-            book.content = row[14]
-            tags = row[15]
-
-            picture = row[16]
+            book.currency_unit = doc['currency_unit']
+            book.binding = doc['binding']
+            book.isbn = doc['isbn']
+            book.author_intro = doc['author_intro']
+            book.book_intro = doc['book_intro']
+            book.content = doc['content']
+            picture = doc['picture']
+            tags = doc['tags']
 
             for tag in tags.split("\n"):
                 if tag.strip() != "":

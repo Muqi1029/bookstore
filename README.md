@@ -217,3 +217,6 @@ def unregister(self, user_id: str, password: str) -> (int, str):
         return 530, "{}".format(str(e))
     # return 200, "ok"
 ```
+
+### 2.2 new order
+
