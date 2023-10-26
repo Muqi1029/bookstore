@@ -27,16 +27,24 @@ class GenBook:
         start = 0
         if rows > max_book_count:
             start = random.randint(0, rows - max_book_count)
+
         size = random.randint(1, max_book_count)
+
         books = book_db.get_book_info(start, size)
+
         book_id_exist = []
         book_id_stock_level = {}
+
         for bk in books:
+
             if low_stock_level:
                 stock_level = random.randint(0, 100)
             else:
                 stock_level = random.randint(2, 100)
+
+            # add the book to the store
             code = self.seller.add_book(self.store_id, stock_level, bk)
+
             assert code == 200
             book_id_stock_level[bk.id] = stock_level
             book_id_exist.append(bk)
@@ -47,13 +55,17 @@ class GenBook:
                 buy_num = random.randint(1, stock_level)
             else:
                 buy_num = 0
+
             # add a new pair
             if non_exist_book_id:
                 bk.id = bk.id + "_x"
+
+            # fail to buy book
             if low_stock_level:
                 buy_num = stock_level + 1
             self.buy_book_info_list.append((bk, buy_num))
 
         for item in self.buy_book_info_list:
             self.buy_book_id_list.append((item[0].id, item[1]))
+
         return ok, self.buy_book_id_list

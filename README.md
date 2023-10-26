@@ -82,7 +82,7 @@
 
 
 ```shell
-mongod --dbpath="D:\software_data\MongoDB\data\testdb"
+mongod --dbpath="D:\softwareData\MongoDB\data\testdb"
 ```
 
 ## 2. MongoDB database establishment
@@ -217,3 +217,6 @@ def unregister(self, user_id: str, password: str) -> (int, str):
         return 530, "{}".format(str(e))
     # return 200, "ok"
 ```
+
+### 2.2 new order
+
