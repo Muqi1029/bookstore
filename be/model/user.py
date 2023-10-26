@@ -177,11 +177,9 @@ class User(db_conn.DBConn):
             }
             result = self.conn.user_collection.update_one(query, update_data)
 
-            if result.modified_count == 0:
+            if result.matched_count == 0:
                 return error.error_authorization_fail()
 
-        except sqlite.Error as e:
-            return 528, "{}".format(str(e))
         except BaseException as e:
             return 530, "{}".format(str(e))
         return 200, "ok"

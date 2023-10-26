@@ -1,9 +1,8 @@
-import sqlite3 as sqlite
 import uuid
-import json
 import logging
 from be.model import db_conn
 from be.model import error
+import json
 
 
 class Buyer(db_conn.DBConn):
@@ -28,8 +27,9 @@ class Buyer(db_conn.DBConn):
                     return error.error_non_exist_book_id(book_id) + (order_id,)
 
                 stock_level = book_doc.get("stock_level")
-                book_info = book_doc.get("book_info")
-                price = book_info.get("price")
+                book_info = json.loads(book_doc.get("book_info"))
+                price = book_info.get("price",0)
+                print(price)
 
                 if stock_level < count:
                     return error.error_stock_level_low(book_id) + (order_id,)
@@ -37,7 +37,7 @@ class Buyer(db_conn.DBConn):
                 query = {"store_id": store_id, "book_id": book_id, "stock_level": {"$gte": count}}
                 update = {"$inc": {"stock_level": -count}}
                 update_result = self.conn.store_collection.update_one(query, update)
-                if update_result.modified_count == 0:
+                if update_result.matched_count == 0:
                     return error.error_stock_level_low(book_id) + (order_id,)
 
                 order_detail_data = {
@@ -55,13 +55,9 @@ class Buyer(db_conn.DBConn):
             }
             self.conn.new_order_collection.insert_one(order_data)
             order_id = uid
-        except sqlite.Error as e:
-            logging.info("528, {}".format(str(e)))
-            return 528, "{}".format(str(e)), ""
         except BaseException as e:
             logging.info("530, {}".format(str(e)))
             return 530, "{}".format(str(e)), ""
-
         return 200, "ok", order_id
 
     def payment(self, user_id: str, password: str, order_id: str) -> (int, str):
@@ -100,8 +96,8 @@ class Buyer(db_conn.DBConn):
             order_detail_cursor = self.conn.new_order_detail_collection.find(order_detail_query)
             total_price = 0
             for order_detail_doc in order_detail_cursor:
-                count = order_detail_doc.get("count")
-                price = order_detail_doc.get("price")
+                count = order_detail_doc.get("count",0)
+                price = order_detail_doc.get("price",0)
                 total_price += price * count
 
             if balance < total_price:
@@ -110,27 +106,29 @@ class Buyer(db_conn.DBConn):
             user_query = {"user_id": buyer_id, "balance": {"$gte": total_price}}
             user_update = {"$inc": {"balance": -total_price}}
             update_result = self.conn.user_collection.update_one(user_query, user_update)
-            if update_result.modified_count == 0:
+            if update_result.matched_count == 0:
                 return error.error_not_sufficient_funds(order_id)
             
-            user_query = {"user_id": buyer_id}
+            user_query = {"user_id": seller_id}
             user_update = {"$inc": {"balance": total_price}}
             update_result = self.conn.user_collection.update_one(user_query, user_update)
-            if update_result.modified_count == 0:
+            if update_result.matched_count == 0:
                 return error.error_non_exist_user_id(buyer_id)
 
             order_query = {"order_id": order_id}
             delete_result = self.conn.new_order_collection.delete_one(order_query)
             if delete_result.deleted_count == 0:
                 return error.error_invalid_order_id(order_id)
-
+            
+            order_paid = {"order_id": order_id,"user_id": user_id,"store_id": store_id,"price": total_price,"books_status": 0}
+            paid = self.conn.new_order_paid.insert_one(order_paid)
+            
+            """
             order_detail_query = {"order_id": order_id}
             delete_result = self.conn.new_order_detail_collection.delete_many(order_detail_query)
             if delete_result.deleted_count == 0:
                 return error.error_invalid_order_id(order_id)
-
-        except sqlite.Error as e:
-            return 528, "{}".format(str(e))
+            """
 
         except BaseException as e:
             return 530, "{}".format(str(e))
@@ -150,12 +148,152 @@ class Buyer(db_conn.DBConn):
             user_query = {"user_id": user_id}
             update = {"$inc": {"balance": add_value}}
             update_result = self.conn.user_collection.update_one(user_query, update)
-            if update_result.modified_count == 0:
+            if update_result.matched_count == 0:
                 return error.error_non_exist_user_id(user_id)
 
-        except sqlite.Error as e:
-            return 528, "{}".format(str(e))
         except BaseException as e:
             return 530, "{}".format(str(e))
 
         return 200, "ok"
+    
+    def receive_books(self, user_id: str, order_id: str) -> (int, str):
+        order_query = {"order_id": order_id}
+        order_doc = self.conn.new_order_paid.find_one(order_query)
+        
+        if order_doc == None:
+            return error.error_invalid_order_id(order_id)
+        
+        buyer_id = order_doc.get("user_id")  
+        paid_status = order_doc.get("books_status")
+        
+        if buyer_id != user_id:
+            return error.error_authorization_fail()
+        if paid_status == 0:
+            return error.error_books_not_sent()      
+        if paid_status == 2:
+            return error.error_books_duplicate_receive() 
+        self.conn.new_order_paid.update_one(order_query, {"$set": {"books_status": 2}})
+    
+        return 200, "ok"
+    
+    def cancel_order(self, user_id: str, order_id: str) -> (int, str):
+        order_query = {"order_id": order_id}
+        order_doc = self.conn.new_order_collection.find_one(order_query)
+    
+        #取消未付款订单
+        if order_doc:
+            buyer_id = order_doc.get("user_id")
+            if buyer_id != user_id:
+                return error.error_authorization_fail()
+            order_id = order_doc.get("order_id")
+            store_id = order_doc.get("store_id")
+            price = order_doc.get("price")
+            self.conn.new_order_collection.delete_one({"order_id": order_id})
+
+        #取消已付款订单
+        else:
+            paid_doc = self.conn.new_order_paid.find_one(order_query)
+            if paid_doc:
+
+                buyer_id = paid_doc.get("user_id")
+
+                if buyer_id != user_id:
+                    return error.error_authorization_fail()
+                order_id = order_doc.get("order_id")
+                store_id = order_doc.get("store_id")
+                price = order_doc.get("price")
+
+                seller_query = {"store_id": store_id}
+                seller_doc = self.conn.user_store_collection.find_one(seller_query)
+                if seller_doc == None:
+                    return error.error_non_exist_store_id(store_id)
+            
+                seller_id = seller_doc.get("user_id")
+            
+                user_query = {"user_id": seller_id}
+                update = {"$inc": {"balance": -price}}
+                update_result = self.conn.user_collection.update_one(user_query, update)
+
+                if update_result == None:
+                    return error.error_non_exist_user_id(seller_id)
+
+                user_query1 = {"user_id": user_id}
+                update1 = {"$inc": {"balance": price}}
+                update_result1 = self.conn.user_collection.update_one(user_query1, update1)
+        
+                if update_result1 == None:
+                    return error.error_non_exist_user_id(user_id)
+            
+                order_query = {"order_id": order_id}
+                delete_result = self.conn.new_order_paid.delete_one(order_query)
+                if delete_result == None:
+                    return error.error_invalid_order_id(order_id)
+
+            else:
+                return error.error_invalid_order_id(order_id) 
+
+        insert_order = {"order_id": order_id,"user_id": user_id,"store_id": store_id,"price": price}
+        self.conn.new_order_cancelinsert_one(insert_order)
+        return 200, "ok"
+    
+    #查询历史订单
+    def check_hist_order(self, user_id: str):
+        if not self.user_id_exist(user_id):
+            return error.error_non_exist_user_id(user_id)
+        
+        res = []
+        #查询未付款订单
+        user_query = {"user_id": user_id}
+        new_order_cursor = self.conn.new_order_collection.find(user_query)
+        if new_order_cursor:
+            for new_order in new_order_cursor:
+                details = []
+                order_id = new_order.get("order_id")
+
+                detail_cursor = {"order_id": order_id}
+                new_order_detail_cursor = self.conn.new_order_detail_collection.find(detail_cursor)
+                
+                if new_order_detail_cursor:
+                    for new_order_detail in new_order_detail_cursor:
+                        details.append({"book_id": new_order_detail.get("book_id"),"count": new_order_detail.get("count"),"price": new_order_detail.get("price")})
+                else:
+                    return error.error_invalid_order_id(order_id)
+                res.append({"status": "not paid","order_id": order_id,"buyer_id": new_order.get("user_id"),"store_id": new_order.get("store_id"),"total_price": new_order.get("price"),"details": details})
+        
+        #查询已付款订单
+        books_status=["not send","already send","already receive"]
+        new_order_paid_cursor = self.conn.new_order_paid.find(user_query)
+        if new_order_paid_cursor:
+            for new_order_paid in new_order_paid_cursor:
+                details = []
+                order_id = new_order_paid.get("order_id")
+                detail_cursor = {"order_id": order_id}
+                new_order_detail_cursor = self.conn.new_order_detail_collection.find(detail_cursor)
+                if new_order_detail_cursor:
+                    for new_order_detail in new_order_detail_cursor:
+                        details.append({"book_id": new_order_detail.get("book_id"),"count": new_order_detail.get("count"),"price": new_order_detail.get("price")})
+                else:
+                    return error.error_invalid_order_id(order_id)
+                res.append({"status": "already paid","order_id": order_id,"buyer_id": new_order_paid.get("user_id"),"store_id": new_order_paid.get("store_id"),"total_price": new_order_paid.get("price"),"books_status": books_status[new_order_paid.get("books_status")],"details": details})
+
+
+        
+        #查询已取消订单
+        new_order_cancel_cursor = self.conn.new_order_cancel.find(user_query)
+        if new_order_cancel_cursor:
+            for new_order_cancel in new_order_cancel_cursor:
+                details = []
+                order_id = new_order_cancel.get("order_id")
+                detail_cursor = {"order_id": order_id}
+                new_order_detail_cursor = self.conn.new_order_detail_collection.find(detail_cursor)
+                if new_order_detail_cursor:
+                    for new_order_detail in new_order_detail_cursor:
+                        details.append({"book_id": new_order_detail.get("book_id"),"count": new_order_detail.get("count"),"price": new_order_detail.get("price")})
+                else:
+                    return error.error_invalid_order_id(order_id)
+                
+                res.append({"status": "cancelled","order_id": order_id,"buyer_id": new_order_cancel.get("user_id"),"store_id": new_order_cancel.get("store_id"),"total_price": new_order_cancel.get("price"),"details": details})
+        if not res:
+            return 200, "ok", "No orders found "
+        else:
+            return 200, "ok", res

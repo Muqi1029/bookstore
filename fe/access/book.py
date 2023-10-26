@@ -32,31 +32,33 @@ class Book:
 class BookDB:
     def __init__(self, large: bool = False):
         #db_conn.DBConn.__init__(self)
-        parent_path = os.path.dirname(os.path.dirname(__file__))
-        #self.client = MongoClient('mongodb://localhost:27017/')
-        #self.db = self.client['bookstore']
-        
+        #parent_path = os.path.dirname(os.path.dirname(__file__))
+        self.client = MongoClient('mongodb://localhost:27017/')
+        self.db = self.client['bookstore']
+        self.book_col=self.db["books"]
+        """
         self.db_s = os.path.join(parent_path, "data/book.db")
         self.db_l = os.path.join(parent_path, "data/book_lx.db")
         if large:
             self.book_db = self.db_l
         else:
             self.book_db = self.db_s
-        
+        """
 
     def get_book_count(self):
-        #return self.collection.count_documents({})
+        return self.book_col.count_documents({})
         
-        conn = sqlite.connect(self.book_db)
-        cursor = conn.execute("SELECT count(id) FROM book")
-        row = cursor.fetchone()
-        return row[0]
-        """
+        #conn = sqlite.connect(self.book_db)
+        #cursor = conn.execute("SELECT count(id) FROM book")
+        #row = cursor.fetchone()
+        #return row[0]
+    
 
     def get_book_info(self, start, size) -> [Book]:
         books = []
-        cursor = self.collection.find().skip(start).limit(size)
-        for doc in cursor:
+        find_result = self.book_col.find().skip(start).limit(size)
+        #print(list(find_result))
+        for doc in find_result:
             book = Book()
             book.id = doc['id']
             book.title = doc['title']
@@ -137,3 +139,4 @@ class BookDB:
             # print(tags)
 
         return books
+"""

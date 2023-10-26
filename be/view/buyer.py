@@ -8,6 +8,7 @@ bp_buyer = Blueprint("buyer", __name__, url_prefix="/buyer")
 
 @bp_buyer.route("/new_order", methods=["POST"])
 def new_order():
+    print(2222222)
     user_id: str = request.json.get("user_id")
     store_id: str = request.json.get("store_id")
     books: [] = request.json.get("books")
