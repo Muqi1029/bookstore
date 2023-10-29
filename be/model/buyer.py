@@ -116,13 +116,20 @@ class Buyer(db_conn.DBConn):
             if update_result.matched_count == 0:
                 return error.error_not_sufficient_funds(order_id)
             
-            user_query = {"user_id": buyer_id}#seller_id
+            user_query = {"user_id": seller_id}#seller_id
             user_update = {"$inc": {"balance": total_price}}
             update_result = self.conn.user_collection.update_one(user_query, user_update)
             if update_result.matched_count == 0:
                 return error.error_non_exist_user_id(buyer_id)
 
             order_query = {"order_id": order_id}
+            order_data = {
+                "order_id": order_id,
+                "store_id": store_id,
+                "user_id": buyer_id,
+                "books_status": 0
+            }
+            self.conn.new_order_paid.insert_one(order_data)
             delete_result = self.conn.new_order_collection.delete_one(order_query)
             if delete_result.deleted_count == 0:
                 return error.error_invalid_order_id(order_id)
@@ -310,8 +317,11 @@ class Buyer(db_conn.DBConn):
             return 200, "ok", "No orders found "
         else:
             return 200, "ok", res
-        
+"""        
     def auto_cancel_order(self) -> (int, str):
+        if not self.user_id_exist(user_id):
+            return error.error_non_exist_user_id(user_id)
+        
         wait_time = 20
         now = datetime.utcnow()
         cursor = {"time_": {"$lte": now - timedelta(seconds=wait_time)}}
@@ -347,3 +357,4 @@ sched.add_job(Buyer().auto_cancel_order, 'interval', id='5_second_job', seconds=
 
 # Start the scheduler
 sched.start()
+"""
