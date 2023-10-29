@@ -19,7 +19,10 @@ class Store:
         self.new_order_detail_collection = self.db['new_order_detail']
         self.new_order_paid = self.db['new_order_paid']
         self.new_order_cancel_collection = self.db['new_order_cancel']
-        
+
+        self.book_collection = self.db['books']
+        # create index of books for search
+        self.book_collection.create_index({"title": "text", "book_intro": "text", "tag": "text", "content": "text"})
 
 
 database_instance = None

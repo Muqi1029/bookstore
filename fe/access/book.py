@@ -1,9 +1,6 @@
-import os
-import sqlite3 as sqlite
 from pymongo import MongoClient
 import random
 import base64
-import simplejson as json
 
 
 class Book:

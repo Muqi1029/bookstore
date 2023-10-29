@@ -218,5 +218,17 @@ def unregister(self, user_id: str, password: str) -> (int, str):
     # return 200, "ok"
 ```
 
-### 2.2 new order
+### 2.2 buyer
 
+
+### 2.3 seller
+
+60%
+<hr />
+
+### 2.4 发货 & 收获
+
+### 2.5 搜索图书
+
+
+### 2.6 订单状态

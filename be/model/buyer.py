@@ -12,7 +12,7 @@ class Buyer(db_conn.DBConn):
         db_conn.DBConn.__init__(self)
 
     def new_order(
-        self, user_id: str, store_id: str, id_and_count: [(str, int)]
+            self, user_id: str, store_id: str, id_and_count: [(str, int)]
     ) -> (int, str, str):
         order_id = ""
         try:
@@ -46,9 +46,9 @@ class Buyer(db_conn.DBConn):
                     "book_id": book_id,
                     "count": count,
                     "price": price
-                }   
+                }
                 self.conn.new_order_detail_collection.insert_one(order_detail_data)
-            
+
             order_data = {
                 "order_id": uid,
                 "store_id": store_id,
@@ -109,14 +109,14 @@ class Buyer(db_conn.DBConn):
 
             if balance < total_price:
                 return error.error_not_sufficient_funds(order_id)
-            
+
             user_query = {"user_id": buyer_id, "balance": {"$gte": total_price}}
             user_update = {"$inc": {"balance": -total_price}}
             update_result = self.conn.user_collection.update_one(user_query, user_update)
             if update_result.matched_count == 0:
                 return error.error_not_sufficient_funds(order_id)
-            
-            user_query = {"user_id": buyer_id}#seller_id
+
+            user_query = {"user_id": buyer_id}  # seller_id
             user_update = {"$inc": {"balance": total_price}}
             update_result = self.conn.user_collection.update_one(user_query, user_update)
             if update_result.matched_count == 0:
@@ -139,6 +139,13 @@ class Buyer(db_conn.DBConn):
             return 530, "{}".format(str(e))
 
         return 200, "ok"
+
+    def search_keyword(self, keyword):
+        try:
+            find_result = self.conn.book_collection.find({"$text": {"$search": keyword}})
+            print(find_result)
+        except Exception as e:
+            pass
 
     def add_funds(self, user_id, password, add_value) -> (int, str):
         try:
@@ -310,7 +317,7 @@ class Buyer(db_conn.DBConn):
             return 200, "ok", "No orders found "
         else:
             return 200, "ok", res
-        
+
     def auto_cancel_order(self) -> (int, str):
         wait_time = 20
         now = datetime.utcnow()
@@ -324,21 +331,21 @@ class Buyer(db_conn.DBConn):
                 price = order["price"]
 
                 self.conn.new_order_collection.delete_one({"order_id": order_id})
-                canceled_order = {"order_id": order_id,"user_id": user_id,"store_id": store_id,"price": price}
+                canceled_order = {"order_id": order_id, "user_id": user_id, "store_id": store_id, "price": price}
                 self.conn.new_order_cancel_collection.insert_one(canceled_order)
         return 200, "ok"
 
-
-    #测试auto_cancel_order的函数
+    # 测试auto_cancel_order的函数
     def is_order_cancelled(self, order_id: str) -> (int, str):
 
         order = self.conn.new_order_cancel_collection.find_one({"order_id": order_id})
 
         if order == None:
-            return error.error_auto_cancel_fail(order_id)#超时前已付款
+            return error.error_auto_cancel_fail(order_id)  # 超时前已付款
         else:
             return 200, "ok"
-        
+
+
 # Create a scheduler
 sched = BackgroundScheduler()
 
