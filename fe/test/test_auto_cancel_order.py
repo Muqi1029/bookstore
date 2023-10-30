@@ -40,7 +40,7 @@ class TestAutoCancelOrder:
     def test_ok_overtime(self):
         code, self.order_id = self.buyer.new_order(self.store_id, self.buy_book_id_list)
         assert code == 200
-        time.sleep(self.wait_time+5)
+        time.sleep(self.wait_time + 5)
         code = self.buyer.is_order_cancelled(self.order_id)
         assert code == 200
 

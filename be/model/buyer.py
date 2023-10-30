@@ -11,16 +11,18 @@ class Buyer(db_conn.DBConn):
     def __init__(self):
         db_conn.DBConn.__init__(self)
 
-    def new_order(
-        self, user_id: str, store_id: str, id_and_count: [(str, int)]
-    ) -> (int, str, str):
+    def new_order(self, user_id: str, store_id: str, id_and_count: [(str, int)]) -> (int, str, str):
         order_id = ""
         try:
+            # 判断 user_id 是否存在
             if not self.user_id_exist(user_id):
                 return error.error_non_exist_user_id(user_id) + (order_id,)
+            # 判断 store_id 是否存在
             if not self.store_id_exist(store_id):
                 return error.error_non_exist_store_id(store_id) + (order_id,)
+            
             uid = "{}_{}_{}".format(user_id, store_id, str(uuid.uuid1()))
+            total_price = 0
 
             for book_id, count in id_and_count:
                 query = {"store_id": store_id, "book_id": book_id}
@@ -48,11 +50,16 @@ class Buyer(db_conn.DBConn):
                     "price": price
                 }   
                 self.conn.new_order_detail_collection.insert_one(order_detail_data)
-            
+                total_price += price * count
+
+            now_time = datetime.utcnow()
             order_data = {
                 "order_id": uid,
                 "store_id": store_id,
-                "user_id": user_id
+                "user_id": user_id,
+                "place_order_time": now_time,
+                "price": total_price
+
             }
             self.conn.new_order_collection.insert_one(order_data)
             order_id = uid
@@ -70,9 +77,10 @@ class Buyer(db_conn.DBConn):
             if order_doc is None:
                 return error.error_invalid_order_id(order_id)
 
-            order_id = order_doc["order_id"]
+            #order_id = order_doc["order_id"]
             buyer_id = order_doc["user_id"]
             store_id = order_doc["store_id"]
+            total_price = order_doc["price"]
 
             if buyer_id != user_id:
                 return error.error_authorization_fail()
@@ -99,13 +107,6 @@ class Buyer(db_conn.DBConn):
                 return error.error_non_exist_user_id(seller_id)
 
             # 4. order
-            order_detail_query = {"order_id": order_id}
-            order_detail_cursor = self.conn.new_order_detail_collection.find(order_detail_query)
-            total_price = 0
-            for order_detail_doc in order_detail_cursor:
-                count = order_detail_doc.get("count")
-                price = order_detail_doc.get("price")
-                total_price += price * count
 
             if balance < total_price:
                 return error.error_not_sufficient_funds(order_id)
@@ -116,7 +117,7 @@ class Buyer(db_conn.DBConn):
             if update_result.matched_count == 0:
                 return error.error_not_sufficient_funds(order_id)
             
-            user_query = {"user_id": seller_id}#seller_id
+            user_query = {"user_id": seller_id}
             user_update = {"$inc": {"balance": total_price}}
             update_result = self.conn.user_collection.update_one(user_query, user_update)
             if update_result.matched_count == 0:
@@ -127,20 +128,14 @@ class Buyer(db_conn.DBConn):
                 "order_id": order_id,
                 "store_id": store_id,
                 "user_id": buyer_id,
-                "books_status": 0
+                "books_status": 0,
+                "price": total_price
             }
             self.conn.new_order_paid.insert_one(order_data)
             delete_result = self.conn.new_order_collection.delete_one(order_query)
             if delete_result.deleted_count == 0:
                 return error.error_invalid_order_id(order_id)
 
-            """
-            order_detail_query = {"order_id": order_id}
-            delete_result = self.conn.new_order_detail_collection.delete_many(order_detail_query)
-            if not delete_result.acknowledged:
-                return error.error_invalid_order_id(order_id)
-
-            """
 
         except BaseException as e:
             return 530, "{}".format(str(e))
@@ -191,7 +186,8 @@ class Buyer(db_conn.DBConn):
     def cancel_order(self, user_id: str, order_id: str) -> (int, str):
         order_query = {"order_id": order_id}
         order_doc = self.conn.new_order_collection.find_one(order_query)
-
+        store_id = ""
+        price = 0
         # 取消未付款订单
         if order_doc:
             buyer_id = order_doc.get("user_id")
@@ -200,7 +196,15 @@ class Buyer(db_conn.DBConn):
             store_id = order_doc.get("store_id")
             price = order_doc.get("price")
             self.conn.new_order_collection.delete_one({"order_id": order_id})
-
+            book_doc = self.conn.new_order_detail_collection.find(order_query)
+            for book in book_doc:
+                book_id = book["book_id"]
+                count = book["count"]
+                query = {"store_id": store_id, "book_id": book_id }
+                update = {"$inc": {"stock_level": count}}
+                update_result = self.conn.store_collection.update_one(query, update)
+                if update_result.modified_count == 0:
+                    return error.error_stock_level_low(book_id) + (order_id,)
         # 取消已付款订单
         else:
             paid_doc = self.conn.new_order_paid.find_one(order_query)
@@ -210,8 +214,8 @@ class Buyer(db_conn.DBConn):
 
                 if buyer_id != user_id:
                     return error.error_authorization_fail()
-                store_id = order_doc.get("store_id")
-                price = order_doc.get("price")
+                store_id = paid_doc.get("store_id")
+                price = paid_doc.get("price")
 
                 seller_query = {"store_id": store_id}
                 seller_doc = self.conn.user_store_collection.find_one(seller_query)
@@ -223,21 +227,28 @@ class Buyer(db_conn.DBConn):
                 user_query = {"user_id": seller_id}
                 update = {"$inc": {"balance": -price}}
                 update_result = self.conn.user_collection.update_one(user_query, update)
-
                 if update_result == None:
                     return error.error_non_exist_user_id(seller_id)
 
                 user_query1 = {"user_id": buyer_id}
                 update1 = {"$inc": {"balance": price}}
                 update_result1 = self.conn.user_collection.update_one(user_query1, update1)
-
                 if update_result1 == None:
                     return error.error_non_exist_user_id(user_id)
 
-                order_query = {"order_id": order_id}
                 delete_result = self.conn.new_order_paid.delete_one(order_query)
                 if delete_result == None:
                     return error.error_invalid_order_id(order_id)
+
+                book_doc = self.conn.new_order_detail_collection.find(order_query)
+                for book in book_doc:
+                    book_id = book["book_id"]
+                    count = book["count"]
+                    query = {"store_id": store_id, "book_id": book_id}
+                    update = {"$inc": {"stock_level": count}}
+                    update_result = self.conn.store_collection.update_one(query, update)
+                    if update_result.modified_count == 0:
+                        return error.error_stock_level_low(book_id) + (order_id,)
 
             else:
                 return error.error_invalid_order_id(order_id)
@@ -317,14 +328,13 @@ class Buyer(db_conn.DBConn):
             return 200, "ok", "No orders found "
         else:
             return 200, "ok", res
-"""        
+
     def auto_cancel_order(self) -> (int, str):
-        if not self.user_id_exist(user_id):
-            return error.error_non_exist_user_id(user_id)
-        
-        wait_time = 20
-        now = datetime.utcnow()
-        cursor = {"time_": {"$lte": now - timedelta(seconds=wait_time)}}
+
+        wait_time = 20 # 等待时间20s
+        now = datetime.utcnow() # 获取当前的UTC时间，并将其存储在now变量中
+        interval = now - timedelta(seconds=wait_time)
+        cursor = {"place_order_time": {"$lte": interval}}
         orders_to_cancel = self.conn.new_order_collection.find(cursor)
         if orders_to_cancel:
             for order in orders_to_cancel:
@@ -332,9 +342,10 @@ class Buyer(db_conn.DBConn):
                 user_id = order["user_id"]
                 store_id = order["store_id"]
                 price = order["price"]
-
                 self.conn.new_order_collection.delete_one({"order_id": order_id})
-                canceled_order = {"order_id": order_id,"user_id": user_id,"store_id": store_id,"price": price}
+
+                canceled_order = {"order_id": order_id, "user_id": user_id,"store_id": store_id, "price": price}
+                
                 self.conn.new_order_cancel_collection.insert_one(canceled_order)
         return 200, "ok"
 
@@ -357,4 +368,5 @@ sched.add_job(Buyer().auto_cancel_order, 'interval', id='5_second_job', seconds=
 
 # Start the scheduler
 sched.start()
-"""
+
+

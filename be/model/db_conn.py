@@ -1,8 +1,11 @@
 from be.model import store
-
+from pymongo import MongoClient
 
 class DBConn:
     def __init__(self):
+        #self.client = MongoClient('mongodb://localhost:27017/')
+        #self.db = self.client['bookstore']
+        #self.conn = self.db
         self.conn = store.get_db_conn()
 
     def user_id_exist(self, user_id):
