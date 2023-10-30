@@ -31,12 +31,12 @@ class TestCancelOrder:
                 continue
             else:
                 self.total_price = self.total_price + book.price * num
-        
-        code = self.buyer.add_funds(self.total_price+1000000)
+
+        code = self.buyer.add_funds(self.total_price + 1000000)
         assert code == 200
         yield
 
-    #已付款订单的取消
+    # 已付款订单的取消
     def test_ok_paid(self):
         code, self.order_id = self.buyer.new_order(self.store_id, self.buy_book_id_list)
         assert code == 200
@@ -45,46 +45,46 @@ class TestCancelOrder:
         code = self.buyer.cancel_order(self.buyer_id, self.order_id)
         assert code == 200
 
-    #未付款订单的取消
+    # 未付款订单的取消
     def test_ok_not_paid(self):
         code, self.order_id = self.buyer.new_order(self.store_id, self.buy_book_id_list)
         assert code == 200
         code = self.buyer.cancel_order(self.buyer_id, self.order_id)
         assert code == 200
 
-    #已付款订单号 order_id 不存在   
+    # 已付款订单号 order_id 不存在
     def test_invalid_order_id_paid(self):
         code, self.order_id = self.buyer.new_order(self.store_id, self.buy_book_id_list)
         assert code == 200
         code = self.buyer.payment(self.order_id)
         assert code == 200
-        code = self.buyer.cancel_order(self.buyer_id, self.order_id+'x')
+        code = self.buyer.cancel_order(self.buyer_id, self.order_id + 'x')
         assert code != 200
 
-    #未付款订单号 order_id 不存在
+    # 未付款订单号 order_id 不存在
     def test_invalid_order_id_not_paid(self):
         code, self.order_id = self.buyer.new_order(self.store_id, self.buy_book_id_list)
         assert code == 200
-        code = self.buyer.cancel_order(self.buyer_id, self.order_id+'x')
+        code = self.buyer.cancel_order(self.buyer_id, self.order_id + 'x')
         assert code != 200
 
-    #取消已付款订单时buyer_id与user_id不匹配
+    # 取消已付款订单时buyer_id与user_id不匹配
     def test_authorization_error_paid(self):
         code, self.order_id = self.buyer.new_order(self.store_id, self.buy_book_id_list)
         assert code == 200
         code = self.buyer.payment(self.order_id)
         assert code == 200
-        code = self.buyer.cancel_order(self.buyer_id+'x', self.order_id)
+        code = self.buyer.cancel_order(self.buyer_id + 'x', self.order_id)
         assert code != 200
 
-    #取消未付款订单时buyer_id与user_id不匹配
+    # 取消未付款订单时buyer_id与user_id不匹配
     def test_authorization_error_not_paid(self):
         code, self.order_id = self.buyer.new_order(self.store_id, self.buy_book_id_list)
         assert code == 200
-        code = self.buyer.cancel_order(self.buyer_id+'x', self.order_id)
+        code = self.buyer.cancel_order(self.buyer_id + 'x', self.order_id)
         assert code != 200
 
-    #已付款订单不可重复取消
+    # 已付款订单不可重复取消
     def test_duplicate_cancel_paid(self):
         code, self.order_id = self.buyer.new_order(self.store_id, self.buy_book_id_list)
         assert code == 200
@@ -95,7 +95,7 @@ class TestCancelOrder:
         code = self.buyer.cancel_order(self.buyer_id, self.order_id)
         assert code != 200
 
-    #未付款订单不可重复取消
+    # 未付款订单不可重复取消
     def test_duplicate_cancel_not_paid(self):
         code, self.order_id = self.buyer.new_order(self.store_id, self.buy_book_id_list)
         assert code == 200

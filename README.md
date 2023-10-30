@@ -279,28 +279,90 @@ db:
 <hr />
 
 ### 2.4 发货 & 收货
-发货：`send_books`
+#### 发货：
+`send_books`
 
-argument: user_id, order_id
-1. 根据`new_order_paid`检查是否付款
-2. `store`: - number
-3. `new_order_paid`更新订单状态
+- argument: 
+  - user_id
+  - order_id
+- logic:
+  1. 根据`new_order_paid`检查是否付款
+  2. `store`: - number
+  3. `new_order_paid`更新订单状态
 
-收货：
-1. 
+#### 收货：
+1.  
 
+
+-- -- 
 ### 2.5 搜索图书
+
+- db:
+  - store
+  - books
+- arguments:
+  - keyword
+  - page(optional, default 1)
+  - store_id(optional, default None)
+- logic:
+  1. 在books中的content, tags, book_intro, title建立全文索引优化查找
+  2. 根据可能传入的page和store_id做相对应的查找
 
 
 ### 2.6 订单状态，订单查询和取消定单
-argument: user_id, order_idx
+#### 用户查询自已的历史订单 
+- db:
+  - `new_order_paid`
+  - `new_order_cancel`
+  - `new_order`
+- argument
+  - user_id
+- logistic:
+  1. 未付款订单：根据user_id去`new_order`中找对应的order_id, 根据order_id去`new_order_detail`找到对应的订单详细信息并返回
+  2. #TODO
 
-用户可以查自已的历史订单 : `new_order_paid, new_order_cancel, new_order`,
 
-用户也可以取消订单: `new_order_paid, new_order`
-取消的订单 insert => new_order_cancel
 
-自动取消： ``
+-- -- 
+#### 买家主动取消订单:
+
+- db : 
+  - new_order_paid: 已支付订单数据库
+  - new_order: 下单（未付款）数据库
+  - new_order_detail: 订单详情数据库
+  - store: 书店数据库
+- arguments: 
+  - user_id
+  - order_id
+- logistic: 
+  1. 根据new_order查询是否已经付款，
+     1. 若未付款，直接根据order_id将该订单从`new_order`中删去
+     2. 若已付款，根据订单id去`new_order_paid`找到详细订单信息，给卖家减钱，给买家加钱，将该订单从`new_order_paid`中删除
+  2. 根据order_id从`new_order_detail`获取订单的详细信息，给对应商店加库存
+  3. 将该取消的订单插入到`new_order_cancel`
+
+-- -- 
+#### 超时自动取消订单
+- db:
+  - new_order_cancel
+- argument:
+  - none
+- logic:
+  - 查询现在的时间 - interval, 从`new_order`中删除时间小于等于这个时间点的订单
+
+
+任务调度器：
+```python
+# Create a scheduler
+sched = BackgroundScheduler()
+
+# Add the job to the scheduler
+sched.add_job(Buyer().auto_cancel_order, 'interval', id='5_second_job', seconds=5)
+
+# Start the scheduler
+sched.start()
+```
+
 
 
 

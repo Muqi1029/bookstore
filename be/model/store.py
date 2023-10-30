@@ -1,9 +1,9 @@
-import pymongo
+from pymongo import MongoClient
 
 
 class Store:
     def __init__(self, db_url):
-        self.client = pymongo.MongoClient(db_url)
+        self.client = MongoClient(db_url)
         self.db = self.client['bookstore']
         self.init_collections()
 
@@ -36,5 +36,7 @@ def init_database(db_url):
 
 
 def get_db_conn():
-    global database_instance
+    db_url = 'mongodb://localhost:27017/'
+    global database_instance 
+    database_instance = Store(db_url)
     return database_instance

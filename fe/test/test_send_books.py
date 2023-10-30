@@ -2,9 +2,9 @@ import pytest
 
 from fe.test.gen_book_data import GenBook
 from fe.access.new_buyer import register_new_buyer
-from fe.access.new_seller import register_new_seller
 from fe.access.book import Book
 import uuid
+
 
 class TestSendBooks:
     @pytest.fixture(autouse=True)
@@ -29,12 +29,12 @@ class TestSendBooks:
             else:
                 self.total_price = self.total_price + book.price * num
 
-        code = self.buyer.add_funds(self.total_price+1000000)
+        code = self.buyer.add_funds(self.total_price + 1000000)
         assert code == 200
-        
+
         code, self.order_id = b.new_order(self.store_id, buy_book_id_list)
         assert code == 200
-        
+
         code = self.buyer.payment(self.order_id)
         assert code == 200
         yield
@@ -46,12 +46,12 @@ class TestSendBooks:
 
     # 订单号 order_id 不存在
     def test_invalid_order_id(self):
-        code = self.seller.send_books(self.seller_id, self.order_id+'x')
+        code = self.seller.send_books(self.seller_id, self.order_id + 'x')
         assert code != 200
 
     # 权限错误 user_id 与 store的user_id 不对应
     def test_authorization_error(self):
-        code = self.seller.send_books(self.seller_id+'x', self.order_id)
+        code = self.seller.send_books(self.seller_id + 'x', self.order_id)
         assert code != 200
 
     # 订单已发货不可重复发货
@@ -60,4 +60,3 @@ class TestSendBooks:
         assert code == 200
         code = self.seller.send_books(self.seller_id, self.order_id)
         assert code != 200
-

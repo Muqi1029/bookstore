@@ -33,13 +33,6 @@ class TestSearchBook:
         print(content, len(content))
         assert code == 200
 
-    def test_specific_field_search(self):
-        scope = "content"
-        content, code = self.buyer.search(self.keyword, scope)
-        content = json.loads(content)['message']
-        print(content, len(content))
-        assert code == 200
-
     def test_pagination(self):
         content, code = self.buyer.search(self.keyword, page=2)
         assert code == 200

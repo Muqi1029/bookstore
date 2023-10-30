@@ -49,7 +49,6 @@ def add_funds():
 def search_books():
     keyword = request.json.get("keyword")
     scope = request.json.get("scope")
-    shop_id = request.json.get("shop_id")
     store_id = request.json.get("store_id")
     page = request.json.get("page")
 

@@ -30,44 +30,44 @@ class TestReceiveBooks:
                 continue
             else:
                 self.total_price = self.total_price + book.price * num
-        
-        code = self.buyer.add_funds(self.total_price+1000000)
+
+        code = self.buyer.add_funds(self.total_price + 1000000)
         assert code == 200
-        
+
         code, self.order_id = b.new_order(self.store_id, buy_book_id_list)
         assert code == 200
-        
+
         code = self.buyer.payment(self.order_id)
         assert code == 200
         yield
-    
-    #收货正常
+
+    # 收货正常
     def test_ok(self):
         code = self.seller.send_books(self.seller_id, self.order_id)
         assert code == 200
         code = self.buyer.receive_books(self.buyer_id, self.order_id)
         assert code == 200
 
-    #订单号 order_id 不存在
+    # 订单号 order_id 不存在
     def test_invalid_order_id(self):
         code = self.seller.send_books(self.seller_id, self.order_id)
         assert code == 200
-        code = self.buyer.receive_books(self.buyer_id, self.order_id+'x')
+        code = self.buyer.receive_books(self.buyer_id, self.order_id + 'x')
         assert code != 200
 
-    #权限错误 buyer_id 与 user_id 不对应
+    # 权限错误 buyer_id 与 user_id 不对应
     def test_authorization_error(self):
         code = self.seller.send_books(self.seller_id, self.order_id)
         assert code == 200
-        code = self.buyer.receive_books(self.buyer_id+'x', self.order_id)
+        code = self.buyer.receive_books(self.buyer_id + 'x', self.order_id)
         assert code != 200
 
-    #订单未发货
+    # 订单未发货
     def test_books_not_send(self):
         code = self.buyer.receive_books(self.buyer_id, self.order_id)
         assert code != 200
 
-    #订单已收货不可重复收货
+    # 订单已收货不可重复收货
     def test_books_duplicate_receive(self):
         code = self.seller.send_books(self.seller_id, self.order_id)
         assert code == 200
@@ -75,4 +75,3 @@ class TestReceiveBooks:
         assert code == 200
         code = self.buyer.receive_books(self.buyer_id, self.order_id)
         assert code != 200
-
