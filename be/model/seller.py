@@ -67,9 +67,8 @@ class Seller(db_conn.DBConn):
             self.conn.user_store_collection.insert_one(user_store_doc)
             """
             self.conn.user_store_collection.insert_one({"store_id": store_id, "user_id": user_id})
-        except sqlite.Error as e:
-            return 528, "{}".format(str(e))
         except BaseException as e:
+            print(str(e))
             return 530, "{}".format(str(e))
         return 200, "ok"
         

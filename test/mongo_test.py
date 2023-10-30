@@ -1,7 +1,7 @@
-
 import pymongo
 
 myclient = pymongo.MongoClient("mongodb://localhost:27017/")
+
 
 def getUsers():
     bookstore_db = myclient["bookstore"]
@@ -27,6 +27,3 @@ getUsers()
 # book_col.insert_one(one_data)
 #
 # print(list(book_col.find({})))
-
-
-

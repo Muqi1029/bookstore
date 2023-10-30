@@ -85,7 +85,7 @@ class Workload:
             for j in range(1, self.store_num_per_user + 1):
                 store_id = self.to_store_id(i, j)
                 code = seller.create_store(store_id)
-                assert code == 200
+                assert code == 200, f"create store error: {code}"
                 self.store_ids.append(store_id)
                 row_no = 0
 
@@ -95,7 +95,7 @@ class Workload:
                         break
                     for bk in books:
                         code = seller.add_book(store_id, self.stock_level, bk)
-                        assert code == 200
+                        assert code == 200, f"add book error: {code}"
                         if i == 1 and j == 1:
                             self.book_ids.append(bk.id)
                     row_no = row_no + len(books)

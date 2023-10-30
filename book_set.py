@@ -15,7 +15,7 @@ sqlite_cursor.execute("SELECT * FROM book")
 book_records = sqlite_cursor.fetchall()
 
 # 将书籍信息插入到 MongoDB 中
-for record in book_records:
+for i, record in enumerate(book_records):
     book_data = {
         "id": record[0],  
         "title": record[1],
@@ -37,6 +37,8 @@ for record in book_records:
         # 添加其他字段...
     }
     mongo_collection.insert_one(book_data)
+    if i == 100:
+        break
 
 # 关闭数据库连接
 sqlite_conn.close()
