@@ -16,7 +16,7 @@
 │  │  │  error.py
 │  │  │  seller.py
 │  │  │  store.py  # initialize database
-│  │  │  user.py  # user 
+│  │  │  user.py  # user: register, login
 │  │  │  __init__.py
 │  │
 │  ├─view # 后端访问接口
@@ -219,6 +219,58 @@ def unregister(self, user_id: str, password: str) -> (int, str):
 ```
 
 ### 2.2 buyer
+> 买家用户接口，如充值、下单、付款
+#### 充值
+`user_collection`
+
+```python
+def add_funds(self, user_id, password, add_value) -> (int, str):
+    try:
+        user_query = {"user_id": user_id}
+        user_doc = self.conn.user_collection.find_one(user_query)
+        if user_doc is None:
+            return error.error_authorization_fail()
+
+        if user_doc.get("password") != password:
+            return error.error_authorization_fail()
+
+        user_query = {"user_id": user_id}
+        update = {"$inc": {"balance": add_value}}
+        update_result = self.conn.user_collection.update_one(user_query, update)
+
+        if update_result.matched_count == 0:
+            return error.error_non_exist_user_id(user_id)
+    except BaseException as e:
+        return 530, "{}".format(str(e))
+
+    return 200, "ok
+```
+
+#### 下单
+db: 
+- `user` 是否存在
+- `store`
+- `new_order_detail`: 每个订单包含的包含的详细信息，如价格
+- `new_order`: buyer_id+store_id+order_id
+
+1. insert new_order_detail
+
+
+#### 付款
+
+db:
+- argument: 
+  - buyer and order id
+
+1. 订单合法检查 + 拿store_id
+2. 买家合法检查 + 拿balance
+3. `user_store`: 根据store_id 找seller
+4. buyer - cost, seller + cost
+5. insert to `new_order_paid`, delete from `new_order`
+6. 
+
+
+#### 创建店铺、填加书籍信息及描述、增加库存
 
 
 ### 2.3 seller
@@ -226,9 +278,31 @@ def unregister(self, user_id: str, password: str) -> (int, str):
 60%
 <hr />
 
-### 2.4 发货 & 收获
+### 2.4 发货 & 收货
+发货：`send_books`
+
+argument: user_id, order_id
+1. 根据`new_order_paid`检查是否付款
+2. `store`: - number
+3. `new_order_paid`更新订单状态
+
+收货：
+1. 
 
 ### 2.5 搜索图书
 
 
-### 2.6 订单状态
+### 2.6 订单状态，订单查询和取消定单
+argument: user_id, order_idx
+
+用户可以查自已的历史订单 : `new_order_paid, new_order_cancel, new_order`,
+
+用户也可以取消订单: `new_order_paid, new_order`
+取消的订单 insert => new_order_cancel
+
+自动取消： ``
+
+
+
+
+

@@ -1,10 +1,12 @@
+import json
+
 from flask import Blueprint
 from flask import request
 from flask import jsonify
 from be.model.buyer import Buyer
+from bson import json_util
 
 bp_buyer = Blueprint("buyer", __name__, url_prefix="/buyer")
-
 
 @bp_buyer.route("/new_order", methods=["POST"])
 def new_order():
@@ -45,17 +47,15 @@ def add_funds():
 
 @bp_buyer.route("/search", methods=["POST"])
 def search_books():
-    search_content = request.json.get("search_content")
-    search_mode = request.json.get("search_mode")
+    keyword = request.json.get("keyword")
+    scope = request.json.get("scope")
+    shop_id = request.json.get("shop_id")
+    store_id = request.json.get("store_id")
+    page = request.json.get("page")
+
     b = Buyer()
-    if search_mode == "keyword":
-        b.search_keyword(keyword=search_content)
-    elif search_mode == "store":
-        pass
-    elif search_mode == "":
-        pass
-    else:
-        return jsonify({"message": "error"}), 513
+    code, message = b.search(keyword, scope, store_id, page)
+    return jsonify({"message": message}), code
 
 
 @bp_buyer.route("/receive_books", methods=["POST"])

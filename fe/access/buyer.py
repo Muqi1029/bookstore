@@ -75,11 +75,17 @@ class Buyer:
         r = requests.post(url, headers=headers, json=json)
         return r.status_code
 
-    def search(self, search_content, search_mode):
+    def search(self, keyword, scope=None, store_id=None, page=1):
+        # store
         json = {
-            "search_content": search_content,
-            "search_mode": search_mode
+            "keyword": keyword,
+            "page": page
         }
+        if scope:
+            json["scope"] = scope
+        if store_id:
+            json["store_id"] = store_id
+
         url = urljoin(self.url_prefix, "search")
         r = requests.post(url, json=json)
         return r.content, r.status_code

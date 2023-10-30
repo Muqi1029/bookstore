@@ -3,8 +3,7 @@ import json
 import logging
 from be.model import db_conn
 from be.model import error
-from datetime import datetime, timedelta
-from apscheduler.schedulers.background import BackgroundScheduler
+from datetime import datetime
 
 
 class Buyer(db_conn.DBConn):
@@ -52,8 +51,10 @@ class Buyer(db_conn.DBConn):
             order_data = {
                 "order_id": uid,
                 "store_id": store_id,
-                "user_id": user_id
+                "user_id": user_id,
+                "time": datetime.now()
             }
+
             self.conn.new_order_collection.insert_one(order_data)
             order_id = uid
         except BaseException as e:
@@ -65,6 +66,7 @@ class Buyer(db_conn.DBConn):
     def payment(self, user_id: str, password: str, order_id: str) -> (int, str):
         try:
             order_query = {"order_id": order_id}
+
             # 1. find order
             order_doc = self.conn.new_order_collection.find_one(order_query)
             if order_doc is None:
@@ -79,7 +81,7 @@ class Buyer(db_conn.DBConn):
 
             user_query = {"user_id": buyer_id}
 
-            # 2. find buyer user
+            # 2. find buyer
             user_doc = self.conn.user_collection.find_one(user_query)
             if user_doc is None:
                 return error.error_non_exist_user_id(buyer_id)
@@ -87,14 +89,12 @@ class Buyer(db_conn.DBConn):
             if password != user_doc.get("password", ""):
                 return error.error_authorization_fail()
 
-            # 3. find store
+            # 3. find seller depending on store id
             user_store_query = {"store_id": store_id}
             user_store_doc = self.conn.user_store_collection.find_one(user_store_query)
             if user_store_doc is None:
                 return error.error_non_exist_store_id(store_id)
-
             seller_id = user_store_doc.get("user_id")
-
             if not self.user_id_exist(seller_id):
                 return error.error_non_exist_user_id(seller_id)
 
@@ -116,13 +116,21 @@ class Buyer(db_conn.DBConn):
             if update_result.matched_count == 0:
                 return error.error_not_sufficient_funds(order_id)
 
-            user_query = {"user_id": buyer_id}  # seller_id
+            user_query = {"user_id": seller_id}  # seller_id
             user_update = {"$inc": {"balance": total_price}}
             update_result = self.conn.user_collection.update_one(user_query, user_update)
             if update_result.matched_count == 0:
                 return error.error_non_exist_user_id(buyer_id)
 
             order_query = {"order_id": order_id}
+            order_data = {
+                "order_id": order_id,
+                "store_id": store_id,
+                "user_id": buyer_id,
+                "books_status": 0
+            }
+            self.conn.new_order_paid.insert_one(order_data)
+
             delete_result = self.conn.new_order_collection.delete_one(order_query)
             if delete_result.deleted_count == 0:
                 return error.error_invalid_order_id(order_id)
@@ -140,12 +148,35 @@ class Buyer(db_conn.DBConn):
 
         return 200, "ok"
 
-    def search_keyword(self, keyword):
+    def search(self, keyword, scope=None, store_id=None, page=1, per_page=10):
         try:
-            find_result = self.conn.book_collection.find({"$text": {"$search": keyword}})
-            print(find_result)
-        except Exception as e:
-            pass
+            base_query = {"$text": {"$search": keyword}}
+            scope_fields = {
+                "title": "title",
+                "tags": "tags",
+                "book_intro": "book_intro",
+                "content": "content"
+            }
+            if scope and scope in scope_fields:
+                field_name = scope_fields[scope]
+                query = {field_name: base_query}
+            else:
+                query = base_query
+
+            if store_id:
+                results = self.conn.store_collection.find({"store_id": store_id}, {"book_id": 1, "_id": 0})
+                books_id = [o['book_id'] for o in results]
+                query["id"] = {"$in": books_id}
+
+            print(query)
+            results = self.conn.book_collection.find(query,
+                                                     {"score": {"$meta": "textScore"}, "_id": 0, "picture": 0}).sort(
+                [("score", {"$meta": "textScore"})])
+            # Perform pagination
+            results.skip((int(page) - 1) * per_page).limit(per_page)
+        except BaseException as e:
+            return 530, f"{str(e)}"
+        return 200, list(results)
 
     def add_funds(self, user_id, password, add_value) -> (int, str):
         try:
@@ -318,7 +349,13 @@ class Buyer(db_conn.DBConn):
         else:
             return 200, "ok", res
 
+
+"""        
+>>>>>>> origin/annie
     def auto_cancel_order(self) -> (int, str):
+        if not self.user_id_exist(user_id):
+            return error.error_non_exist_user_id(user_id)
+        
         wait_time = 20
         now = datetime.utcnow()
         cursor = {"time_": {"$lte": now - timedelta(seconds=wait_time)}}
@@ -354,3 +391,4 @@ sched.add_job(Buyer().auto_cancel_order, 'interval', id='5_second_job', seconds=
 
 # Start the scheduler
 sched.start()
+"""
