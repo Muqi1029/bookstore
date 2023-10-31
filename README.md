@@ -220,3 +220,146 @@ def unregister(self, user_id: str, password: str) -> (int, str):
 
 ### 2.2 new order
 
+db:
+
++ store_collection
++ new_order_detail_collection
++ new_order_collection
+
+argument:
+
++ user_id
++ store_id
++ id_and_cont
+
+### 2.2 payment
+
+db:
+
++ new_order_collection
++ user_collection
++ user_store_collection
++ new_order_collection
++ new_order_paid
+
+argument:
+
++ user_id
++ password
++ order_id
+
+### 2.3add_funds
+
+db:
+
++ user_collection
+
+argument:
+
++ user_id
++ password
++ add_value
+
+#### 2.4 add_book
+
+db:
+
++ store_collection
+
+argument:
+
++ user_id
++ store_id
++ book_id
++ book_json_str
++ stock_level
+
+#### 2.5 add_stock_level
+
+db:
+
++ store_collection
+
+argument:
+
++ user_id
++ store_id
++ book_id
++ add_stock_level
+
+#### 2.6 create_store
+
+db:
+
++ user_store_collection
+
+argument:
+
++ user_id
++ store_id
+
+#### 3.0 send_books
+
+db:
+
++ new_order_paid
++ user_store_collection
+
+argument:
+
++ user_id
++ order_id
+
+#### 3.1. receive_books
+
+db:
+
++ new_order_paid
+
+argument:
+
++ user_id
++ order_id
+
+#### 3.2 cancel_order
+
+db:
+
++ new_order_collection
++ new_order_detail_collection
++ store_collection
++ new_order_paid
++ user_store_collection
++ new_order_cancel_collection
+
+argument:
+
++ user_id
++ order_id
+
+#### 3.3 check_hist_order
+
+db:
+
++ new_order_collection
++ new_order_detail_collection
++ new_order_paid
++ new_order_cancel_collection
+
+argument:
+
++ user_id
+
+#### 3.4 auto_cancel_order&is_order_cancelled
+
+db:
+
++ new_order_collection
++ new_order_detail_collection
++ store_collection
++ new_order_cancel_collection
+
+argument:
+
++ order_id
+  

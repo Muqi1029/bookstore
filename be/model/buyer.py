@@ -64,8 +64,8 @@ class Buyer(db_conn.DBConn):
             self.conn.new_order_collection.insert_one(order_data)
             order_id = uid
         except BaseException as e:
-            logging.info("530, {}".format(str(e)))
-            return 530, "{}".format(str(e)), ""
+            logging.info("528, {}".format(str(e)))
+            return 528, "{}".format(str(e)), ""
 
         return 200, "ok", order_id
 
@@ -138,7 +138,7 @@ class Buyer(db_conn.DBConn):
 
 
         except BaseException as e:
-            return 530, "{}".format(str(e))
+            return 528, "{}".format(str(e))
 
         return 200, "ok"
 
@@ -159,9 +159,9 @@ class Buyer(db_conn.DBConn):
             if update_result.matched_count == 0:
                 return error.error_non_exist_user_id(user_id)
         except BaseException as e:
-            return 530, "{}".format(str(e))
+            return 528, "{}".format(str(e))
 
-        return 200, "ok"
+        return 200, "o"
 
     def receive_books(self, user_id: str, order_id: str) -> (int, str):
         order_query = {"order_id": order_id}
@@ -343,11 +343,23 @@ class Buyer(db_conn.DBConn):
                 store_id = order["store_id"]
                 price = order["price"]
                 self.conn.new_order_collection.delete_one({"order_id": order_id})
-
+                
+                order_query = {"order_id": order_id}
+                book_doc = self.conn.new_order_detail_collection.find(order_query)
+                for book in book_doc:
+                    book_id = book["book_id"]
+                    count = book["count"]
+                    query = {"store_id": store_id, "book_id": book_id}
+                    update = {"$inc": {"stock_level": count}}
+                    update_result = self.conn.store_collection.update_one(query, update)
+                    if update_result.modified_count == 0:
+                        return error.error_stock_level_low(book_id) + (order_id,)
+                    
                 canceled_order = {"order_id": order_id, "user_id": user_id,"store_id": store_id, "price": price}
                 
                 self.conn.new_order_cancel_collection.insert_one(canceled_order)
         return 200, "ok"
+
 
 
     #测试auto_cancel_order的函数
