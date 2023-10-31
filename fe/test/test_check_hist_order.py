@@ -18,7 +18,7 @@ class TestCheckHistOrder:
         self.buyer = b
         yield
 
-    #查询历史订单正常
+    # 查询历史订单正常
     def test_ok_have_orders(self):
         for i in range(10):
             self.seller_id = "test_check_hist_order_seller_id_{}".format(str(uuid.uuid1()))
@@ -38,25 +38,25 @@ class TestCheckHistOrder:
                     continue
                 else:
                     self.total_price = self.total_price + book.price * num
-            
-            code = self.buyer.add_funds(self.total_price+1000000)
+
+            code = self.buyer.add_funds(self.total_price + 1000000)
             assert code == 200
-            
+
             code, self.order_id = self.buyer.new_order(self.store_id, buy_book_id_list)
             assert code == 200
-            
-            is_cancelled = random.randint(0,1)
+
+            is_cancelled = random.randint(0, 1)
             if is_cancelled == 1:
                 code = self.buyer.cancel_order(self.buyer_id, self.order_id)
                 assert code == 200
                 continue
             else:
-                is_paid = random.randint(0,1)
+                is_paid = random.randint(0, 1)
                 if is_paid == 1:
                     code = self.buyer.payment(self.order_id)
                     assert code == 200
-                    is_cancelled = random.randint(0,1)
-                    #发货和收货前的取消订单情况
+                    is_cancelled = random.randint(0, 1)
+                    # 发货和收货前的取消订单情况
                     if is_cancelled == 1:
                         code = self.buyer.cancel_order(self.buyer_id, self.order_id)
                         assert code == 200
@@ -64,8 +64,8 @@ class TestCheckHistOrder:
                     else:
                         code = self.seller.send_books(self.seller_id, self.order_id)
                         assert code == 200
-                        is_cancelled = random.randint(0,1)
-                        #发货后收货前的取消订单情况
+                        is_cancelled = random.randint(0, 1)
+                        # 发货后收货前的取消订单情况
                         if is_cancelled == 1:
                             code = self.buyer.cancel_order(self.buyer_id, self.order_id)
                             assert code == 200
@@ -75,12 +75,11 @@ class TestCheckHistOrder:
                             assert code == 200
         code = self.buyer.check_hist_order(self.buyer_id)
         assert code == 200
-                        
+
     def test_non_exist_user_id(self):
-        code = self.buyer.check_hist_order(self.buyer_id+'x')
+        code = self.buyer.check_hist_order(self.buyer_id + 'x')
         assert code != 200
 
     def test_ok_no_orders(self):
         code = self.buyer.check_hist_order(self.buyer_id)
         assert code == 200
-

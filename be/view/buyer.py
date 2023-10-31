@@ -1,10 +1,12 @@
+import json
+
 from flask import Blueprint
 from flask import request
 from flask import jsonify
 from be.model.buyer import Buyer
+from bson import json_util
 
 bp_buyer = Blueprint("buyer", __name__, url_prefix="/buyer")
-
 
 @bp_buyer.route("/new_order", methods=["POST"])
 def new_order():
@@ -42,6 +44,19 @@ def add_funds():
     code, message = b.add_funds(user_id, password, add_value)
     return jsonify({"message": message}), code
 
+
+@bp_buyer.route("/search", methods=["POST"])
+def search_books():
+    keyword = request.json.get("keyword")
+    scope = request.json.get("scope")
+    store_id = request.json.get("store_id")
+    page = request.json.get("page")
+
+    b = Buyer()
+    code, message = b.search(keyword, scope, store_id, page)
+    return jsonify({"message": message}), code
+
+
 @bp_buyer.route("/receive_books", methods=["POST"])
 def receive_books():
     user_id = request.json.get("user_id")
@@ -49,6 +64,7 @@ def receive_books():
     b = Buyer()
     code, message = b.receive_books(user_id, order_id)
     return jsonify({"message": message}), code
+
 
 @bp_buyer.route("/cancel_order", methods=["POST"])
 def cancel_order():
@@ -58,12 +74,14 @@ def cancel_order():
     code, message = b.cancel_order(user_id, order_id)
     return jsonify({"message": message}), code
 
+
 @bp_buyer.route("/auto_cancel_order", methods=["POST"])
 def auto_cancel_order():
     order_id = request.json.get("order_id")
     b = Buyer()
     code, message = b.auto_cancel_order(order_id)
     return jsonify({"message": message}), code
+
 
 @bp_buyer.route("/is_order_cancelled", methods=["POST"])
 def is_order_cancelled():
@@ -72,9 +90,10 @@ def is_order_cancelled():
     code, message = b.is_order_cancelled(order_id)
     return jsonify({"message": message}), code
 
+
 @bp_buyer.route("/check_hist_order", methods=["POST"])
 def check_hist_order():
     user_id = request.json.get("user_id")
     b = Buyer()
-    code, message ,res = b.check_hist_order(user_id)
+    code, message, res = b.check_hist_order(user_id)
     return jsonify({"message": message, "history orders": res}), code

@@ -33,7 +33,7 @@ class TestAutoCancelOrder:
                 continue
             else:
                 self.total_price = self.total_price + book.price * num
-        code = self.buyer.add_funds(self.total_price+1000000)
+        code = self.buyer.add_funds(self.total_price + 1000000)
         assert code == 200
         yield
 
@@ -44,22 +44,22 @@ class TestAutoCancelOrder:
         code = self.buyer.is_order_cancelled(self.order_id)
         assert code == 200
 
-    #在自动取消前，订单已经被买家取消
+    # 在自动取消前，订单已经被买家取消
     def test_ok_not_overtime_cancel_by_buyer(self):
         code, self.order_id = self.buyer.new_order(self.store_id, self.buy_book_id_list)
         assert code == 200
         code = self.buyer.cancel_order(self.buyer_id, self.order_id)
         assert code == 200
-        time.sleep(self.wait_time+5)
+        time.sleep(self.wait_time + 5)
         code = self.buyer.is_order_cancelled(self.order_id)
         assert code == 200
 
-    #在自动取消前，订单已付款(不在已取消订单中)
+    # 在自动取消前，订单已付款(不在已取消订单中)
     def test_ok_not_overtime_paid(self):
         code, self.order_id = self.buyer.new_order(self.store_id, self.buy_book_id_list)
         assert code == 200
         code = self.buyer.payment(self.order_id)
         assert code == 200
-        time.sleep(self.wait_time+5)
+        time.sleep(self.wait_time + 5)
         code = self.buyer.is_order_cancelled(self.order_id)
         assert code != 200

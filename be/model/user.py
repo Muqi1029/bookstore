@@ -5,14 +5,6 @@ from be.model import error
 from be.model import db_conn
 
 
-# encode a json string like:
-#   {
-#       "user_id": [user name],
-#       "terminal": [terminal code],
-#       "timestamp": [ts]} to a JWT
-#   }
-
-
 def jwt_encode(user_id: str, terminal: str) -> str:
     encoded = jwt.encode(
         {"user_id": user_id, "terminal": terminal, "timestamp": time.time()},
@@ -57,9 +49,6 @@ class User(db_conn.DBConn):
         try:
             terminal = "terminal_{}".format(str(time.time()))
             token = jwt_encode(user_id, terminal)
-            """
-            use mongodb database here
-            """
             user = {
                 "user_id": user_id,
                 "password": password,
@@ -67,6 +56,7 @@ class User(db_conn.DBConn):
                 "token": token,
                 "terminal": terminal,
             }
+            # insert users
             self.conn.user_collection.insert_one(user)
         except Exception:
             return error.error_exist_user_id(user_id)
@@ -146,11 +136,8 @@ class User(db_conn.DBConn):
                 return 200, "ok"
             else:
                 return error.error_authorization_fail()
-        # except sqlite.Error as e:
-        #     return 528, "{}".format(str(e))
         except BaseException as e:
             return 530, "{}".format(str(e))
-        # return 200, "ok"
 
     def change_password(
             self, user_id: str, old_password: str, new_password: str
@@ -178,4 +165,7 @@ class User(db_conn.DBConn):
         except BaseException as e:
             return 528, "{}".format(str(e))
         return 200, "ok"
+
+
+
 

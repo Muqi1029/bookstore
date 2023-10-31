@@ -27,19 +27,19 @@ class Buyer:
         return r.status_code, response_json.get("order_id")
 
     def payment(self, order_id: str):
-        json = {"user_id": self.user_id,"password": self.password,"order_id": order_id,}
+        json = {"user_id": self.user_id, "password": self.password, "order_id": order_id, }
         url = urljoin(self.url_prefix, "payment")
         headers = {"token": self.token}
         r = requests.post(url, headers=headers, json=json)
         return r.status_code
 
     def add_funds(self, add_value: str) -> int:
-        json = {"user_id": self.user_id,"password": self.password,"add_value": add_value,}
+        json = {"user_id": self.user_id, "password": self.password, "add_value": add_value, }
         url = urljoin(self.url_prefix, "add_funds")
         headers = {"token": self.token}
         r = requests.post(url, headers=headers, json=json)
         return r.status_code
-    
+
     def receive_books(self, user_id: str, order_id: str) -> int:
         json = {"user_id": user_id, "order_id": order_id}
         url = urljoin(self.url_prefix, "receive_books")
@@ -74,3 +74,18 @@ class Buyer:
         headers = {"token": self.token}
         r = requests.post(url, headers=headers, json=json)
         return r.status_code
+
+    def search(self, keyword, scope=None, store_id=None, page=1):
+        # store
+        json = {
+            "keyword": keyword,
+            "page": page
+        }
+        if scope:
+            json["scope"] = scope
+        if store_id:
+            json["store_id"] = store_id
+
+        url = urljoin(self.url_prefix, "search")
+        r = requests.post(url, json=json)
+        return r.content, r.status_code

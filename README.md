@@ -16,7 +16,7 @@
 │  │  │  error.py
 │  │  │  seller.py
 │  │  │  store.py  # initialize database
-│  │  │  user.py  # user 
+│  │  │  user.py  # user: register, login
 │  │  │  __init__.py
 │  │
 │  ├─view # 后端访问接口
@@ -218,7 +218,155 @@ def unregister(self, user_id: str, password: str) -> (int, str):
     # return 200, "ok"
 ```
 
-### 2.2 new order
+### 2.2 buyer
+> 买家用户接口，如充值、下单、付款
+#### 充值
+`user_collection`
+
+```python
+def add_funds(self, user_id, password, add_value) -> (int, str):
+    try:
+        user_query = {"user_id": user_id}
+        user_doc = self.conn.user_collection.find_one(user_query)
+        if user_doc is None:
+            return error.error_authorization_fail()
+
+        if user_doc.get("password") != password:
+            return error.error_authorization_fail()
+
+        user_query = {"user_id": user_id}
+        update = {"$inc": {"balance": add_value}}
+        update_result = self.conn.user_collection.update_one(user_query, update)
+
+        if update_result.matched_count == 0:
+            return error.error_non_exist_user_id(user_id)
+    except BaseException as e:
+        return 530, "{}".format(str(e))
+
+    return 200, "ok
+```
+
+#### 下单
+db: 
+- `user` 是否存在
+- `store`
+- `new_order_detail`: 每个订单包含的包含的详细信息，如价格
+- `new_order`: buyer_id+store_id+order_id
+
+1. insert new_order_detail
+
+
+#### 付款
+
+db:
+- argument: 
+  - buyer and order id
+
+1. 订单合法检查 + 拿store_id
+2. 买家合法检查 + 拿balance
+3. `user_store`: 根据store_id 找seller
+4. buyer - cost, seller + cost
+5. insert to `new_order_paid`, delete from `new_order`
+6. 
+
+
+#### 创建店铺、填加书籍信息及描述、增加库存
+
+
+### 2.3 seller
+
+60%
+<hr />
+
+### 2.4 发货 & 收货
+#### 发货：
+`send_books`
+
+- argument: 
+  - user_id
+  - order_id
+- logic:
+  1. 根据`new_order_paid`检查是否付款
+  2. `store`: - number
+  3. `new_order_paid`更新订单状态
+
+#### 收货：
+1.  
+
+
+-- -- 
+### 2.5 搜索图书
+
+- db:
+  - store
+  - books
+- arguments:
+  - keyword
+  - page(optional, default 1)
+  - store_id(optional, default None)
+- logic:
+  1. 在books中的content, tags, book_intro, title建立全文索引优化查找
+  2. 根据可能传入的page和store_id做相对应的查找
+
+
+### 2.6 订单状态，订单查询和取消定单
+#### 用户查询自已的历史订单 
+- db:
+  - `new_order_paid`
+  - `new_order_cancel`
+  - `new_order`
+- argument
+  - user_id
+- logistic:
+  1. 未付款订单：根据user_id去`new_order`中找对应的order_id, 根据order_id去`new_order_detail`找到对应的订单详细信息并返回
+  2. #TODO
+
+
+
+-- -- 
+#### 买家主动取消订单:
+
+- db : 
+  - new_order_paid: 已支付订单数据库
+  - new_order: 下单（未付款）数据库
+  - new_order_detail: 订单详情数据库
+  - store: 书店数据库
+- arguments: 
+  - user_id
+  - order_id
+- logistic: 
+  1. 根据new_order查询是否已经付款，
+     1. 若未付款，直接根据order_id将该订单从`new_order`中删去
+     2. 若已付款，根据订单id去`new_order_paid`找到详细订单信息，给卖家减钱，给买家加钱，将该订单从`new_order_paid`中删除
+  2. 根据order_id从`new_order_detail`获取订单的详细信息，给对应商店加库存
+  3. 将该取消的订单插入到`new_order_cancel`
+
+-- -- 
+#### 超时自动取消订单
+- db:
+  - new_order_cancel
+- argument:
+  - none
+- logic:
+  - 查询现在的时间 - interval, 从`new_order`中删除时间小于等于这个时间点的订单
+
+
+任务调度器：
+```python
+# Create a scheduler
+sched = BackgroundScheduler()
+
+# Add the job to the scheduler
+sched.add_job(Buyer().auto_cancel_order, 'interval', id='5_second_job', seconds=5)
+
+# Start the scheduler
+sched.start()
+```
+
+
+
+
+
 
 db:
 
