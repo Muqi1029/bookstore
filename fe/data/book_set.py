@@ -2,7 +2,7 @@ import sqlite3
 from pymongo import MongoClient
 
 # 连接到 SQLite 数据库
-sqlite_conn = sqlite3.connect('./fe/data/book_lx.db')
+sqlite_conn = sqlite3.connect('book_lx.db')
 sqlite_cursor = sqlite_conn.cursor()
 
 # 连接到本地 MongoDB

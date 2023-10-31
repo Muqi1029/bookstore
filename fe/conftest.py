@@ -24,4 +24,5 @@ def pytest_unconfigure(config):
     url = urljoin(conf.URL, "shutdown")
     requests.get(url)
     thread.join()
+
     print("frontend end test")

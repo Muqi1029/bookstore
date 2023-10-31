@@ -66,24 +66,27 @@ class Seller(db_conn.DBConn):
         return 200, "ok"
         
     def send_books(self, user_id: str, order_id: str) -> (int, str):
-        paid_query = {"order_id": order_id}
-        paid_doc = self.conn.new_order_paid.find_one(paid_query)
+        try:
 
-        if paid_doc == None:
-            return error.error_invalid_order_id(order_id)   
-        store_id = paid_doc.get("store_id")
-        paid_status = paid_doc.get("books_status")
+            paid_query = {"order_id": order_id}
+            paid_doc = self.conn.new_order_paid.find_one(paid_query)
 
-        store_query = {"store_id": store_id}
-        store_doc = self.conn.user_store_collection.find_one(store_query)
-        seller_id = store_doc.get("user_id")
-        
-        if seller_id != user_id:
-            return error.error_authorization_fail()
-        
-        if paid_status == 1 or paid_status == 2:
-            return error.error_books_duplicate_sent()
+            if paid_doc == None:
+                return error.error_invalid_order_id(order_id)   
+            store_id = paid_doc.get("store_id")
+            paid_status = paid_doc.get("books_status")
 
-        self.conn.new_order_paid.update_one(paid_query, {"$set": {"books_status": 1}})     
+            store_query = {"store_id": store_id}
+            store_doc = self.conn.user_store_collection.find_one(store_query)
+            seller_id = store_doc.get("user_id")
+            
+            if seller_id != user_id:
+                return error.error_authorization_fail()
+            
+            if paid_status == 1 or paid_status == 2:
+                return error.error_books_duplicate_sent()
 
+            self.conn.new_order_paid.update_one(paid_query, {"$set": {"books_status": 1}})     
+        except BaseException as e:
+            return 528, "{}".format(str(e))
         return 200, "ok"
