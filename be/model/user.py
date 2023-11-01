@@ -101,7 +101,7 @@ class User(db_conn.DBConn):
             if not update_result.acknowledged:
                 return error.error_authorization_fail() + ("",)
         except BaseException as e:
-            return 530, "{}".format(str(e)), ""
+            return 528, "{}".format(str(e)), ""
         return 200, "ok", token
 
     def logout(self, user_id: str, token: str) -> bool:
@@ -121,10 +121,8 @@ class User(db_conn.DBConn):
             if not update_result.acknowledged:
                 return error.error_authorization_fail()
 
-        # except sqlite.Error as e:
-        #     return 528, "{}".format(str(e))
         except BaseException as e:
-            return 530, "{}".format(str(e))
+            return 528, "{}".format(str(e))
         return 200, "ok"
 
     def unregister(self, user_id: str, password: str) -> (int, str):
@@ -165,7 +163,7 @@ class User(db_conn.DBConn):
                 return error.error_authorization_fail()
 
         except BaseException as e:
-            return 530, "{}".format(str(e))
+            return 528, "{}".format(str(e))
         return 200, "ok"
 
 
