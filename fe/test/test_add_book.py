@@ -8,7 +8,7 @@ import uuid
 class TestAddBook:
     @pytest.fixture(autouse=True)
     def pre_run_initialization(self):
-        # do before test
+        # do before my_test
         self.seller_id = "test_add_books_seller_id_{}".format(str(uuid.uuid1()))
         self.store_id = "test_add_books_store_id_{}".format(str(uuid.uuid1()))
         self.password = self.seller_id
@@ -21,7 +21,7 @@ class TestAddBook:
         self.books = book_db.get_book_info(0, 2)
 
         yield
-        # do after test
+        # do after my_test
 
     def test_ok(self):
         for b in self.books:

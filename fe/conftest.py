@@ -15,7 +15,7 @@ def run_backend():
 
 def pytest_configure(config):
     global thread
-    print("frontend begin test")
+    print("frontend begin my_test")
     thread = threading.Thread(target=run_backend)
     thread.start()
 
@@ -24,4 +24,4 @@ def pytest_unconfigure(config):
     url = urljoin(conf.URL, "shutdown")
     requests.get(url)
     thread.join()
-    print("frontend end test")
+    print("frontend end my_test")

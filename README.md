@@ -55,9 +55,9 @@
 │  │      book_lx.db
 │  │      scraper.py
 │  │
-│  ├─test # final authentic test
+│  ├─test # final authentic my_test
 │  │  │  gen_book_data.py
-│  │  │  test.md
+│  │  │  my_test.md
 │  │  │  test_add_book.py
 │  │  │  test_add_funds.py
 │  │  │  test_add_stock_level.py
@@ -70,9 +70,9 @@
 │  │  │  test_register.py
 ├─script
 │      .coverage
-│      test.sh
+│      my_test.sh
 │
-└─test # my own test
+└─test # my own my_test
     │  con_db_test.py
     │  mongo_test.py
 ```

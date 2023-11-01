@@ -14,7 +14,7 @@ def getUsers():
 
 
 # if __name__ == "__main__":
-getUsers()
+# getUsers()
 # mydb = myclient["bookstore"]
 #
 # book_col = mydb['book']

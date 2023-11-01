@@ -35,6 +35,6 @@ def init_database(db_url):
 
 def get_db_conn():
     db_url = 'mongodb://localhost:27017/'
-    global database_instance 
+    global database_instance
     database_instance = Store(db_url)
     return database_instance
