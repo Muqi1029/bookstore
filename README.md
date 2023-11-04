@@ -125,6 +125,13 @@ def get_db_conn():
 
 #### Register
 
+- argument: 
+  - user_id
+  - password
+- db:
+  - user_collection
+- logic: 根据当前时间和用户id生成用户登录的token，用户数据直接插入到`self.conn.user_connection`中
+
 ```python
 def register(self, user_id: str, password: str):
     try:
@@ -149,6 +156,13 @@ def register(self, user_id: str, password: str):
 #### Login
 
 `/be/model/user`
+- argument: 
+  - user_id
+  - password
+  - terminal
+- db:
+  - user_collection
+- logic: 先根据user_id 查到对应的用户密码，检查登录的密码与用户密码是否相同，若不相同直接返回错误信息，相同后更新用户的token和terminal信息
 
 ```python
 def login(self, user_id: str, password: str, terminal: str) -> (int, str, str):
@@ -166,14 +180,19 @@ def login(self, user_id: str, password: str, terminal: str) -> (int, str, str):
         }})
         if not update_result.acknowledged:
             return error.error_authorization_fail() + ("",)
-    except sqlite.Error as e:
-        return 528, "{}".format(str(e)), ""
     except BaseException as e:
         return 530, "{}".format(str(e)), ""
     return 200, "ok", token
 ```
 
 #### Log out
+- argument:
+  - user_id
+  - token
+- logic:
+  - 先检查用户的token是否正确，正确后更新用户的token
+- db:
+  - user_collection
 
 ```python
 def logout(self, user_id: str, token: str) -> bool:
@@ -201,6 +220,13 @@ def logout(self, user_id: str, token: str) -> bool:
 ```
 
 #### Unregister
+
+- argument:
+  - user_id
+  - password
+- db:
+  - user_collection
+- logic: 检查用户密码是否正确，然后将该条用户直接删除
 
 `/be/model/user`
 
@@ -379,15 +405,16 @@ argument:
 - order_id
 
 -- -- 
+
 #### 搜索图书
 
 - db:
-  - store
-  - books
+    - store
+    - books
 - arguments:
-  - keyword
-  - page(optional, default 1)
-  - store_id(optional, default None)
+    - keyword
+    - page(optional, default 1)
+    - store_id(optional, default None)
 - logic:
-  1. 在books中的content, tags, book_intro, title建立全文索引优化查找
-  2. 根据可能传入的page和store_id做相对应的查找
+    1. 在books中的content, tags, book_intro, title建立全文索引优化查找
+    2. 根据可能传入的page和store_id做相对应的查找
