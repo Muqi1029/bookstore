@@ -104,7 +104,7 @@ class User(db_conn.DBConn):
             return 528, "{}".format(str(e)), ""
         return 200, "ok", token
 
-    def logout(self, user_id: str, token: str) -> bool:
+    def logout(self, user_id: str, token: str) -> (int, str):
         try:
             code, message = self.check_token(user_id, token)
             if code != 200:
@@ -141,7 +141,7 @@ class User(db_conn.DBConn):
 
     def change_password(
             self, user_id: str, old_password: str, new_password: str
-    ) -> bool:
+    ) -> (int, str):
         try:
             code, message = self.check_password(user_id, old_password)
             if code != 200:
@@ -149,7 +149,7 @@ class User(db_conn.DBConn):
 
             terminal = "terminal_{}".format(str(time.time()))
             token = jwt_encode(user_id, terminal)
-            query = {"user_id": user_id,"password": old_password}
+            query = {"user_id": user_id, "password": old_password}
             update_data = {
                 "$set": {
                     "password": new_password,
@@ -165,7 +165,3 @@ class User(db_conn.DBConn):
         except BaseException as e:
             return 528, "{}".format(str(e))
         return 200, "ok"
-
-
-
-
